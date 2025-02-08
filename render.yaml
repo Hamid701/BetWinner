@@ -18,3 +18,4 @@ services:
         sync: false
     autoDeploy: true
     numInstances: 1
+    healthCheckPath: /
