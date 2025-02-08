@@ -54,3 +54,19 @@ local_settings.py
 .coverage
 .pytest_cache/
 htmlcov/
+
+# Conda environments
+.conda/
+miniconda3/
+Miniconda3/
+.conda-env/
+conda-env/
+anaconda/
+Anaconda/
+.anaconda/
+
+# Additional large directories
+node_modules/
+bower_components/
+tmp/
+temp/
