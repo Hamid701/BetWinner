@@ -41,7 +41,8 @@ def run_bot():
         app.run_webhook(
             listen="0.0.0.0",
             port=port,
-            webhook_url=webhook_url,
+            url_path=TELEGRAM_TOKEN,
+            webhook_url=f"{webhook_url}/{TELEGRAM_TOKEN}",
             drop_pending_updates=True,
         )
 
