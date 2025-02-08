@@ -1,0 +1,56 @@
+# Environment variables and secrets
+.env
+*.env
+.env.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env/
+.venv/
+ENV/
+dist/
+build/
+*.egg
+*.egg-info/
+
+# Model files
+models/*.joblib
+models/*.pkl
+
+# Cache
+cache/
+.cache/
+*.cache
+
+# Logs
+*.log
+logs/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local development settings
+local_settings.py
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
