@@ -1,6 +1,6 @@
 # BetWinner: Using AI to Predict Football Match Outcomes
 
-Hey there, football fans! 🌍⚽ Are you passionate about the beautiful game? Do you love diving into stats and making predictions about match results? What if you could take that passion to the next level with the power of artificial intelligence? Welcome to **BetWinner**—your new go-to app for predicting football (or soccer, if you prefer) match outcomes with probabilities, giving you a data-driven edge in your predictions!
+Hey there, football fans! 🌍⚽ Are you passionate about the beautiful game? Do you love diving into stats and making predictions about match results? What if you could take that passion to the next level with the power of artificial intelligence? Welcome to **BetWinner** your new go-to app for predicting football (or soccer, if you prefer) match outcomes with probabilities, giving you a data-driven edge in your predictions!
 
 ## Beyond Gut Feeling: Data-Driven Football Predictions
 
