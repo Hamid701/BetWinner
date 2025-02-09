@@ -18,6 +18,16 @@ class FootballService:
         self.cache_duration = timedelta(hours=1)
         os.makedirs(self.cache_dir, exist_ok=True)
         self.verify_api_access()
+        self.leagues = {
+            "PL": "Premier League",
+            "ELC": "Championship",
+            "FL1": "Ligue 1",
+            "BL1": "Bundesliga",
+            "SA": "Serie A",
+            "PD": "La Liga",
+            "EL1": "League One",
+            "EL2": "League Two",
+        }
 
     def verify_api_access(self):
         """Verify API key is working"""
@@ -61,13 +71,24 @@ class FootballService:
                     # Continue to fetch fresh data if cache read fails
 
         # Rate limiting
-        sleep(1)  # Wait 1 second between requests
+        sleep(2)  # Increased from 1 to 2 seconds
 
         for attempt in range(max_retries):
             try:
                 response = requests.get(
-                    f"{self.base_url}{endpoint}", headers=self.headers, params=params
+                    f"{self.base_url}{endpoint}",
+                    headers=self.headers,
+                    params=params,
+                    timeout=10,
                 )
+
+                # Handle rate limiting explicitly
+                if response.status_code == 429:
+                    retry_after = int(response.headers.get("Retry-After", 60))
+                    logger.info(f"Rate limited. Waiting {retry_after} seconds...")
+                    sleep(retry_after)
+                    continue
+
                 response.raise_for_status()
                 data = response.json()
 
@@ -99,42 +120,49 @@ class FootballService:
     def get_team_stats(self, team_name, timeframe=5):
         """Get team statistics"""
         try:
-            # Try all major leagues
-            leagues = ["PL", "FL1", "BL1", "SA", "PD"]
+            # Try all leagues
+            leagues = list(self.leagues.keys())
             team_data = None
+            league_found = None
+            all_teams = []  # Initialize all_teams list
 
             for league in leagues:
                 try:
                     standings_data = self._make_request(
                         f"/competitions/{league}/standings"
                     )
-                    # Find team in standings
-                    all_teams = []
-                    for standing in standings_data["standings"][0]["table"]:
-                        team = standing["team"]
-                        team["position"] = standing["position"]
-                        team["points"] = standing["points"]
-                        team["goalsFor"] = standing["goalsFor"]
-                        team["goalsAgainst"] = standing["goalsAgainst"]
-                        all_teams.append(team)
+                    if not standings_data or "standings" not in standings_data:
+                        continue
 
-                    # Try to find team
-                    team_data = next(
-                        (
-                            team
-                            for team in all_teams
-                            if team["name"].lower() == team_name.lower()
-                        ),
-                        None,
-                    )
+                    # Collect all teams from standings
+                    for standing_type in standings_data["standings"]:
+                        for standing in standing_type["table"]:
+                            team = standing["team"]
+                            team["position"] = standing["position"]
+                            team["points"] = standing["points"]
+                            team["goalsFor"] = standing["goalsFor"]
+                            team["goalsAgainst"] = standing["goalsAgainst"]
+                            all_teams.append(team)
+
+                            # Check if this is our target team
+                            if team["name"].lower() == team_name.lower():
+                                team_data = team
+                                league_found = league
+
+                        if team_data:
+                            break
                     if team_data:
                         break
-                except:
+                except Exception as e:
+                    logger.warning(f"Error checking league {league}: {e}")
                     continue
 
             if not team_data:
                 logger.warning(f"Team not found in any league: {team_name}")
-                return self._get_default_stats()
+                # Return default stats with team name for identification
+                default_stats = self._get_default_stats()
+                logger.info(f"Using default stats for {team_name}: {default_stats}")
+                return default_stats
 
             team_id = team_data["id"]
 
@@ -357,15 +385,15 @@ class FootballService:
     def _get_default_stats(self):
         """Return default stats when API fails"""
         return {
-            "strength": 0.75,
+            "strength": 0.6,  # More realistic baseline
             "form": 0.5,
             "head_to_head_wins": 0,
-            "goals_scored_last_5": 7,
-            "goals_conceded_last_5": 5,
-            "home_advantage": 0.1,
+            "goals_scored_last_5": 6,  # Slightly higher base scoring rate
+            "goals_conceded_last_5": 4,  # Better defensive baseline
+            "home_advantage": 0.1,  # Small home advantage by default
             "injuries_impact": 0,
-            "league_position": 10,
-            "odds": {"home": 2.0, "away": 2.0, "draw": 3.0},  # Add default odds
+            "league_position": 10,  # Mid-table position
+            "odds": {"home": 2.0, "away": 2.0, "draw": 3.0},
         }
 
     def _get_team_data(self, team_name):
@@ -533,7 +561,9 @@ class FootballService:
                     points.append(0)
 
             # Weight recent matches more heavily
-            weights = [0.1, 0.15, 0.2, 0.25, 0.3][-len(points) :]
+            weights = [0.1, 0.2, 0.3, 0.4, 0.5][
+                -len(points) :
+            ]  # Increased recency bias
             weighted_form = sum(p * w for p, w in zip(points, weights)) / sum(weights)
             return weighted_form / 3  # Normalize to 0-1 scale
 

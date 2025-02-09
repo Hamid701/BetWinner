@@ -27,24 +27,10 @@ def run_bot():
         app.add_handler(CommandHandler("shutdown", shutdown_command))
         app.add_handler(CallbackQueryHandler(button_callback))
 
-        # Get port and webhook URL from environment
-        port = int(os.environ.get("PORT", "8080"))
-        webhook_url = os.environ.get("WEBHOOK_URL")
+        logger.info("Starting bot in polling mode...")
 
-        if not webhook_url:
-            logger.error("WEBHOOK_URL environment variable not set!")
-            return
-
-        logger.info(f"Starting bot on port {port} with webhook URL: {webhook_url}")
-
-        # Run the bot with webhook
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            url_path=TELEGRAM_TOKEN,
-            webhook_url=f"{webhook_url}/{TELEGRAM_TOKEN}",
-            drop_pending_updates=True,
-        )
+        # Run the bot with polling (local mode)
+        app.run_polling(drop_pending_updates=True)
 
     except Exception as e:
         logger.error(f"Error starting bot: {e}")

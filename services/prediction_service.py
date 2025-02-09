@@ -111,6 +111,10 @@ class PredictionService:
         try:
             if os.path.exists(MODEL_PATH):
                 logger.info("Loading existing model...")
+                # Add version warning filter
+                import warnings
+
+                warnings.filterwarnings("ignore", category=UserWarning)
                 model = joblib.load(MODEL_PATH)
                 # Verify model with scaled dummy data
                 dummy_data = self.scaler.transform([[0] * 17])
@@ -237,6 +241,13 @@ class PredictionService:
                 team2, timeframe=timeframe
             )
 
+            # Add warning for unknown teams
+            prediction_warnings = []
+            if team1_stats == self.football_service._get_default_stats():
+                prediction_warnings.append(f"⚠️ Limited data available for {team1}")
+            if team2_stats == self.football_service._get_default_stats():
+                prediction_warnings.append(f"⚠️ Limited data available for {team2}")
+
             # Update this line to get both sentiment and fallback flag
             sentiment_score, is_fallback = self.analyze_sentiment(team1, team2)
             logger.info(f"Sentiment score: {sentiment_score} (fallback: {is_fallback})")
@@ -275,6 +286,35 @@ class PredictionService:
             team1_win_prob = prediction_prob[1]  # Probability of team1 winning
             winner = team1 if team1_win_prob > 0.5 else team2
             confidence = max(prediction_prob)
+
+            # Add confidence adjustment based on data quality
+            if team1_stats == self.football_service._get_default_stats():
+                confidence *= 0.7  # Reduce confidence for unknown teams
+            if team2_stats == self.football_service._get_default_stats():
+                confidence *= 0.7
+
+            # Add league level check
+            if team1_stats.get("league_level", 1) != team2_stats.get("league_level", 1):
+                confidence *= 0.8  # Reduce confidence for cross-league matches
+
+            # Adjust confidence based on data quality and context
+            # Reduce extremely high confidence predictions
+            if confidence > 0.85:
+                confidence = (
+                    0.85 + (confidence - 0.85) * 0.5
+                )  # Dampen very high confidence
+
+            # Adjust for home advantage
+            home_advantage = team1_stats.get("home_advantage", 0)
+            if home_advantage > 0:
+                team1_win_prob = min(team1_win_prob * (1 + home_advantage * 0.2), 0.95)
+
+            # Factor in recent form more heavily
+            form_diff = team1_stats.get("form", 0) - team2_stats.get("form", 0)
+            confidence = confidence * (1 + form_diff * 0.1)
+
+            # Cap final confidence
+            confidence = min(max(confidence, 0.55), 0.95)
 
             # Get additional stats
             team1_additional = {
@@ -321,6 +361,10 @@ class PredictionService:
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━",
                 f"Based on current form, historical data, and team statistics",
             ]
+
+            # Add warnings to prediction details if any
+            if prediction_warnings:
+                prediction_details.insert(1, "\n".join(prediction_warnings))
 
             # Add prediction tracking
             self._save_prediction(
