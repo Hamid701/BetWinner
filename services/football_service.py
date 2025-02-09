@@ -71,7 +71,7 @@ class FootballService:
                     # Continue to fetch fresh data if cache read fails
 
         # Rate limiting
-        sleep(2)  # Increased from 1 to 2 seconds
+        sleep(2)
 
         for attempt in range(max_retries):
             try:
@@ -388,11 +388,11 @@ class FootballService:
             "strength": 0.6,  # More realistic baseline
             "form": 0.5,
             "head_to_head_wins": 0,
-            "goals_scored_last_5": 6,  # Slightly higher base scoring rate
-            "goals_conceded_last_5": 4,  # Better defensive baseline
-            "home_advantage": 0.1,  # Small home advantage by default
+            "goals_scored_last_5": 6,
+            "goals_conceded_last_5": 4,
+            "home_advantage": 0.1,
             "injuries_impact": 0,
-            "league_position": 10,  # Mid-table position
+            "league_position": 10,
             "odds": {"home": 2.0, "away": 2.0, "draw": 3.0},
         }
 
